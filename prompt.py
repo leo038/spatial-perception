@@ -9,5 +9,5 @@ print(PROMPT)
 
 yolo_world_format = PROMPT.replace('.', ',')
 
-print("yolo_world_format:\n")
+print("PROMPT yolo_world_format:\n")
 print(yolo_world_format)
