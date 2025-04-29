@@ -14,5 +14,6 @@ Clip
 Grounding Dino 
 
 
+yolo-world
 
 ## 视觉语言大模型
