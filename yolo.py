@@ -38,6 +38,8 @@ def main():
 
 
 if __name__ == "__main__":
-    time_s = time.time()
-    main()
-    print(f"耗时：{time.time() - time_s}")
+    # time_s = time.time()
+    # main()
+    # print(f"耗时：{time.time() - time_s}")
+
+    infer(img_path="/data/joyiot/leo/datasets/cam_data_own/color_2294.jpg", save_name="test")

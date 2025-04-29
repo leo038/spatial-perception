@@ -23,6 +23,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 def infer(img_path, save_name):
     image_source, image = load_image(img_path)
 
+    time_s = time.time()
     boxes, logits, phrases = predict(
         model=model,
         image=image,
@@ -30,6 +31,8 @@ def infer(img_path, save_name):
         box_threshold=BOX_TRESHOLD,
         text_threshold=TEXT_TRESHOLD
     )
+
+    print(f"推理帧率：{1/(time.time()-time_s)}")
 
     annotated_frame = annotate(image_source=image_source, boxes=boxes, logits=logits, phrases=phrases)
     save_name = os.path.join(OUTPUT_DIR, save_name + ".jpg")
@@ -39,6 +42,8 @@ def infer(img_path, save_name):
 def main():
     image_folder_dir = "/data/joyiot/leo/datasets/cam_data_own/"
     image_list = [name for name in os.listdir(image_folder_dir) if name.endswith('.jpg')]
+
+
 
     img_num = len(image_list)
     sample_rate = 80
@@ -53,6 +58,8 @@ def main():
 
 
 if __name__ == "__main__":
-    time_s = time.time()
-    main()
-    print(f"耗时：{time.time() - time_s}")
+    # time_s = time.time()
+    # main()
+    # print(f"耗时：{time.time() - time_s}")
+
+    infer(img_path="/data/joyiot/leo/datasets/cam_data_own/color_2294.jpg", save_name="test")

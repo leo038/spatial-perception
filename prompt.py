@@ -3,4 +3,11 @@ PROMPT = "person. desk. sofa. chair.monitor.  lamp. plant. door.cup. bottle. win
          "blackboard.sign.mirror.trolley.book.router.text.toy.couch.fan.table. refrigerator. light. camera. telephone." \
          "power outlet. carpet. curtain. hinge.glasses.shoes"
 
-print(f"PROMPT:{PROMPT}")
+print("PROMPT:\n")
+print(PROMPT)
+
+
+yolo_world_format = PROMPT.replace('.', ',')
+
+print("yolo_world_format:\n")
+print(yolo_world_format)
