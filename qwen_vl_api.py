@@ -16,9 +16,10 @@ MASK_ANNOTATOR = sv.MaskAnnotator()
 
 MODEL_NAME = 'qwen2.5-vl-72b-instruct'
 
+print(f"使用的模型：{MODEL_NAME}")
 class_names = PROMPT.replace('.', ',')
 text_prompt = """用矩形框定位图像中物体的位置， 要定位的物体包括： person, desk, sofa, chair,monitor,  lamp, plant, door,cup, bottle, window, mouse, keyboard, cabinet, bin, latch,drawer, flag, handbag, box, pillow,flowerpot, picture, trophy, speaker, shelf, monitor, arm, flower,blackboard,sign,mirror,trolley,book,router,text,toy,couch,fan,table, refrigerator, light, camera, telephone,power outlet, carpet, curtain, hinge,glasses,shoes
-，以JSON格式输出所有的bbox的坐标，不要输出json代码段。输出格式为： [{"label": "object_name","bboxes": [xmin, ymin, xmax, ymax]}, ...], 请严格按照给定的输出格式要求， 一个label只对应一个bboxes. label 也务必在给定的范围内。"""
+，以JSON格式输出所有的bbox的坐标，不要输出```json```代码段。输出格式为： [{"label": "object_name","bboxes": [xmin, ymin, xmax, ymax]}, ...], 请严格按照给定的输出格式要求， 一个label只对应一个bboxes. label 也务必在给定的范围内。"""
 
 print(f"text_prompt:{text_prompt}")
 
@@ -47,8 +48,23 @@ def infer(img_path):
 
     response = dashscope.MultiModalConversation.call(model=MODEL_NAME, messages=messages)
     print(f"原始response:{response}")
+    ## 注意这里可能会出错， 因为模型有时候指令遵循不是很好， 输入了一些无效内容或括号不匹配， 比如```json ```, ```josn等等， 3B, 7B, 32B 基本上每次都出现。
     result = response.output.choices[0].message.content[0]['text']
-    res_json = json.loads(result)
+    try:
+        res_json = json.loads(result)
+    except:
+        print("模型输出了```json等无效内容")
+        if "```json" in result:
+            result = result[7:]
+        if "```" in result:
+            result = result[:-3]
+        try:
+            res_json = json.loads(result)
+        except:
+            print("模型输出内容括号不匹配")
+            result += "}]"
+            res_json = json.loads(result)
+
     print(f"json格式化后结果:{res_json}")
 
     return res_json
@@ -77,7 +93,11 @@ def _format_result(json_result):
     class_names = []
     for det in json_result:
         label = det['label']
-        bbox = det['bboxes']
+        try:
+            bbox = det['bboxes']
+        except:
+            print(f"bboxes名字错误， 实际为bbox")
+            bbox = det['bbox']
         bboxes.append(bbox)
         class_names.append(label)
 
@@ -108,5 +128,7 @@ if __name__ == "__main__":
 
     image = cv2.imread(img_path)
     out_image = visualize(res_json, image)
+
+    save_name = MODEL_NAME + "_66.jpg"
     print(f"保存输出图像")
-    cv2.imwrite("result_qwen.jpg", out_image)
+    cv2.imwrite(save_name, out_image)
