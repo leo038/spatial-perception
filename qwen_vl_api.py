@@ -1,4 +1,5 @@
 import json
+from copy import deepcopy
 
 import cv2
 import dashscope
@@ -48,8 +49,15 @@ def infer(img_path):
 
     response = dashscope.MultiModalConversation.call(model=MODEL_NAME, messages=messages)
     print(f"原始response:{response}")
-    ## 注意这里可能会出错， 因为模型有时候指令遵循不是很好， 输入了一些无效内容或括号不匹配， 比如```json ```, ```josn等等， 3B, 7B, 32B 基本上每次都出现。
+
     result = response.output.choices[0].message.content[0]['text']
+    ## 注意这里可能会出错， 因为模型有时候指令遵循不是很好， 输入了一些无效内容或括号不匹配， 比如```json ```, ```josn等等， 3B, 7B, 32B 基本上每次都出现。
+    res_json = parse_result(result)
+
+    return res_json
+
+
+def parse_result(result):
     try:
         res_json = json.loads(result)
     except:
@@ -58,15 +66,28 @@ def infer(img_path):
             result = result[7:]
         if "```" in result:
             result = result[:-3]
+        if result.endswith(','):
+            result = result[:-1]  # 去掉末尾的逗号
         try:
             res_json = json.loads(result)
+
         except:
             print("模型输出内容括号不匹配")
-            result += "}]"
-            res_json = json.loads(result)
+            try:
+                res_tmp = deepcopy(result)
+                res_tmp += "}]"
+                res_json = json.loads(res_tmp)
+            except:
+                try:
+                    res_tmp = deepcopy(result)
+                    res_tmp += "]"
+                    res_json = json.loads(res_tmp)
+                except:
+                    res_tmp = deepcopy(result)
+                    res_tmp += "]}]"
+                    res_json = json.loads(res_tmp)
 
     print(f"json格式化后结果:{res_json}")
-
     return res_json
 
 
@@ -92,17 +113,27 @@ def _format_result(json_result):
     bboxes = []
     class_names = []
     for det in json_result:
-        label = det['label']
+        try:
+            label = det['label']
+        except:
+            print(f"label名字错误， 实际为labels")
+            label = det.get('labels')
+
         try:
             bbox = det['bboxes']
         except:
             print(f"bboxes名字错误， 实际为bbox")
-            bbox = det['bbox']
+            bbox = det.get('bbox')
+
+        if label is None or bbox is None:
+            continue
+
         bboxes.append(bbox)
         class_names.append(label)
 
     bboxes = np.array(bboxes)
     class_names = np.array(class_names)
+    print(f"检测的目标数量：{len(class_names)}")
 
     class_ids = [class_id_dict[name] for name in class_names]
     class_ids = np.array(class_ids)
@@ -122,13 +153,13 @@ def visualize(results, image):
 
 
 if __name__ == "__main__":
-    img_path = "/data/joyiot/leo/datasets/cam_data_own/color_66.jpg"
+    img_path = "/data/joyiot/leo/datasets/cam_data_own/color_4960.jpg"
 
     res_json = infer(img_path)
 
     image = cv2.imread(img_path)
     out_image = visualize(res_json, image)
 
-    save_name = MODEL_NAME + "_66.jpg"
-    print(f"保存输出图像")
+    save_name = MODEL_NAME + "_4960.jpg"
+    print(f"保存输出图像:{save_name}")
     cv2.imwrite(save_name, out_image)
